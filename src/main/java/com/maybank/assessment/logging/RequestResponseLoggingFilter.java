@@ -11,7 +11,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
@@ -56,32 +55,37 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
         MDC.put(CORRELATION_ID_MDC_KEY, correlationId);
         response.setHeader(CORRELATION_ID_HEADER, correlationId);
 
-        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request, MAX_LOGGED_BODY_LENGTH);
         ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
-
         long start = System.currentTimeMillis();
         try {
-            filterChain.doFilter(requestWrapper, responseWrapper);
-        } finally {
-            long duration = System.currentTimeMillis() - start;
+            // Body is read up front so the REQUEST line is logged before any processing (DB, 3rd-party calls).
+            CachedBodyHttpServletRequest requestWrapper = new CachedBodyHttpServletRequest(request);
             logRequest(requestWrapper);
-            logResponse(requestWrapper, responseWrapper, duration);
+            try {
+                filterChain.doFilter(requestWrapper, responseWrapper);
+            } finally {
+                logResponse(requestWrapper, responseWrapper, System.currentTimeMillis() - start);
+            }
+        } finally {
             // Body was buffered by the wrapper; it must be written back to the real response.
             responseWrapper.copyBodyToResponse();
             MDC.remove(CORRELATION_ID_MDC_KEY);
         }
     }
 
-    private void logRequest(ContentCachingRequestWrapper request) {
+    private void logRequest(CachedBodyHttpServletRequest request) {
+        byte[] body = request.getCachedBody();
         log.info(">>> REQUEST  | {} {} | client={} | headers={} | body={}",
                 request.getMethod(),
                 fullUri(request),
                 request.getRemoteAddr(),
                 requestHeaders(request),
-                bodyAsString(request.getContentAsByteArray(), request.getContentType(), request.getCharacterEncoding()));
+                body == null
+                        ? "<form/multipart content not logged>"
+                        : bodyAsString(body, request.getContentType(), request.getCharacterEncoding()));
     }
 
-    private void logResponse(ContentCachingRequestWrapper request, ContentCachingResponseWrapper response, long duration) {
+    private void logResponse(HttpServletRequest request, ContentCachingResponseWrapper response, long duration) {
         log.info("<<< RESPONSE | {} {} | status={} | duration={}ms | headers={} | body={}",
                 request.getMethod(),
                 fullUri(request),
