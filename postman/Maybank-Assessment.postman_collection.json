@@ -1,0 +1,790 @@
+{
+  "info": {
+    "_postman_id": "9615aa94-e584-4428-9e01-919bf870695d",
+    "name": "Maybank Java Backend Assessment",
+    "description": "Customer account APIs (Spring Boot + MSSQL TESTDB).\n\nRun the whole collection with the Collection Runner: it creates a customer, reads, updates, paginates, calls the 3rd-party exchange rate API, then deletes the customer.\n\nEvery request/response is logged to logs/api-request-response.log with an X-Correlation-Id.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Customers (INSERT / UPDATE / GET)",
+      "item": [
+        {
+          "name": "Create Customer (INSERT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ]
+            },
+            "description": "Creates a customer inside a @Transactional service method. Saves the new id to {{customerId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Muhammad Ali bin Abu\",\n  \"email\": \"ali.{{$timestamp}}@example.com\",\n  \"phoneNo\": \"+60123456789\",\n  \"initialDeposit\": 2500.75,\n  \"currency\": \"MYR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Customer is ACTIVE with account number\", () => {",
+                  "    pm.expect(json.data.status).to.eql(\"ACTIVE\");",
+                  "    pm.expect(json.data.accountNo).to.have.lengthOf(12);",
+                  "});",
+                  "pm.collectionVariables.set(\"customerId\", json.data.id);",
+                  "pm.collectionVariables.set(\"customerEmail\", json.data.email);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Customer - Validation Error (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ]
+            },
+            "description": "Bean Validation failure returns 400 with per-field messages.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"\",\n  \"email\": \"not-an-email\",\n  \"phoneNo\": \"abc\",\n  \"initialDeposit\": -10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "pm.test(\"Returns field errors\", () => pm.expect(pm.response.json().fieldErrors).to.have.property(\"email\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Customer - Duplicate Email (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ]
+            },
+            "description": "Email of a seeded customer -> 409 Conflict.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Duplicate Person\",\n  \"email\": \"ahmad.faizal01@example.com\",\n  \"phoneNo\": \"+60123456789\",\n  \"initialDeposit\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Customer by ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": "Read-only @Transactional(readOnly = true) lookup."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "pm.test(\"Returns the created customer\", () => pm.expect(pm.response.json().data.id).to.eql(Number(pm.collectionVariables.get(\"customerId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Customer - Not Found (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "999999"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Customer (UPDATE)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": "Updates mutable fields inside a @Transactional service method. Optimistic locking via @Version.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Muhammad Ali bin Abu (Updated)\",\n  \"email\": \"{{customerEmail}}\",\n  \"phoneNo\": \"+60198887777\",\n  \"status\": \"INACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "pm.test(\"Status updated\", () => pm.expect(pm.response.json().data.status).to.eql(\"INACTIVE\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Pagination (10 per page)",
+      "item": [
+        {
+          "name": "List Customers - Page 0",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers?page=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Pagination: fixed 10 records per page. Optional params: status, sortBy, direction."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "const d = pm.response.json().data;",
+                  "pm.test(\"Page size is 10\", () => { pm.expect(d.size).to.eql(10); pm.expect(d.content.length).to.be.at.most(10); });",
+                  "pm.test(\"First page\", () => pm.expect(d.first).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Customers - Page 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers?page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "pm.test(\"Page number is 1\", () => pm.expect(pm.response.json().data.page).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Customers - Page 2 (last)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers?page=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "pm.test(\"Page number is 2\", () => pm.expect(pm.response.json().data.page).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Customers - Filter ACTIVE, sort by balance desc",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers?page=0&status=ACTIVE&sortBy=balance&direction=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "balance"
+                },
+                {
+                  "key": "direction",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "pm.test(\"Only ACTIVE customers\", () => pm.response.json().data.content.forEach(c => pm.expect(c.status).to.eql(\"ACTIVE\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Customers - Invalid sortBy (400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers?sortBy=password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "password"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Nested 3rd-party API",
+      "item": [
+        {
+          "name": "Convert Customer Balance to USD (nested 3rd-party call)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/1/balance/convert?to=USD",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "1",
+                "balance",
+                "convert"
+              ],
+              "query": [
+                {
+                  "key": "to",
+                  "value": "USD"
+                }
+              ]
+            },
+            "description": "Postman -> /api/v1/customers/{id}/balance/convert -> reads customer from MSSQL -> calls https://open.er-api.com/v6/latest/{currency} -> returns converted balance."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "const d = pm.response.json().data;",
+                  "pm.test(\"Has exchange rate and converted balance\", () => { pm.expect(d.exchangeRate).to.be.above(0); pm.expect(d.convertedBalance).to.be.a(\"number\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Convert Created Customer Balance to SGD",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}/balance/convert?to=SGD",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}",
+                "balance",
+                "convert"
+              ],
+              "query": [
+                {
+                  "key": "to",
+                  "value": "SGD"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Convert - Unsupported Currency (400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/1/balance/convert?to=XYZ",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "1",
+                "balance",
+                "convert"
+              ],
+              "query": [
+                {
+                  "key": "to",
+                  "value": "XYZ"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Latest Exchange Rates (pass-through)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/exchange-rates?base=MYR&symbols=USD,SGD,EUR,GBP",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exchange-rates"
+              ],
+              "query": [
+                {
+                  "key": "base",
+                  "value": "MYR"
+                },
+                {
+                  "key": "symbols",
+                  "value": "USD,SGD,EUR,GBP"
+                }
+              ]
+            },
+            "description": "Postman -> /api/v1/exchange-rates -> https://open.er-api.com/v6/latest/{base}."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));",
+                  "pm.test(\"Contains USD rate\", () => pm.expect(pm.response.json().data).to.have.property(\"USD\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Cleanup",
+      "item": [
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": "Removes the customer created at the start of the run, so the collection can be re-run."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has X-Correlation-Id header\", () => pm.response.to.have.header(\"X-Correlation-Id\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "customerId",
+      "value": "1"
+    },
+    {
+      "key": "customerEmail",
+      "value": ""
+    }
+  ]
+}

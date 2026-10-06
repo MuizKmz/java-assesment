@@ -1,0 +1,28 @@
+-- Seed data: 25 customers so the paginated GET API returns 3 pages (10 + 10 + 5)
+INSERT INTO customer (full_name, email, phone_no, account_no, balance, currency, status, version, created_at, updated_at)
+VALUES
+    ('Ahmad Faizal bin Hassan', 'ahmad.faizal01@example.com', '+60123007919', '514010004271', 1484.56, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Nurul Aisyah binti Rahman', 'nurul.aisyah02@example.com', '+60123015838', '514010008542', 2719.12, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Tan Wei Ming', 'tan.wei03@example.com', '+60123023757', '514010012813', 3953.68, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Lim Mei Ling', 'lim.mei04@example.com', '+60123031676', '514010017084', 5188.24, 'MYR', 'INACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Rajesh Kumar a/l Subramaniam', 'rajesh.kumar05@example.com', '+60123039595', '514010021355', 6422.80, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Siti Nurhaliza binti Ismail', 'siti.nurhaliza06@example.com', '+60123047514', '514010025626', 7657.36, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Wong Kah Wai', 'wong.kah07@example.com', '+60123055433', '514010029897', 8891.92, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Muhammad Hafiz bin Omar', 'muhammad.hafiz08@example.com', '+60123063352', '514010034168', 10126.48, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Chong Li Ying', 'chong.li09@example.com', '+60123071271', '514010038439', 11361.04, 'MYR', 'INACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Priya Devi a/p Ramasamy', 'priya.devi10@example.com', '+60123079190', '514010042710', 12595.60, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Mohd Azlan bin Yusof', 'mohd.azlan11@example.com', '+60123087109', '514010046981', 13830.16, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Ng Siew Lan', 'ng.siew12@example.com', '+60123095028', '514010051252', 15064.72, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Farah Nadia binti Kamal', 'farah.nadia13@example.com', '+60123102947', '514010055523', 16299.28, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Lee Chee Keong', 'lee.chee14@example.com', '+60123110866', '514010059794', 17533.84, 'MYR', 'INACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Kavitha a/p Muthu', 'kavitha.ap15@example.com', '+60123118785', '514010064065', 18768.40, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Hafizah binti Abdullah', 'hafizah.binti16@example.com', '+60123126704', '514010068336', 20002.96, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Teo Boon Hock', 'teo.boon17@example.com', '+60123134623', '514010072607', 21237.52, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Amirul Hakim bin Zainal', 'amirul.hakim18@example.com', '+60123142542', '514010076878', 22472.08, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Goh Pei Shan', 'goh.pei19@example.com', '+60123150461', '514010081149', 23706.64, 'MYR', 'INACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Arjun a/l Krishnan', 'arjun.al20@example.com', '+60123158380', '514010085420', 24941.20, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Nor Azura binti Salleh', 'nor.azura21@example.com', '+60123166299', '514010089691', 26175.76, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Yap Jun Hao', 'yap.jun22@example.com', '+60123174218', '514010093962', 27410.32, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Izzati binti Mahmud', 'izzati.binti23@example.com', '+60123182137', '514010098233', 28644.88, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Ong Kok Leong', 'ong.kok24@example.com', '+60123190056', '514010102504', 29879.44, 'MYR', 'INACTIVE', 0, SYSDATETIME(), SYSDATETIME()),
+    ('Daniel Lau Chin Yee', 'daniel.lau25@example.com', '+60123197975', '514010106775', 31114.00, 'MYR', 'ACTIVE', 0, SYSDATETIME(), SYSDATETIME());
